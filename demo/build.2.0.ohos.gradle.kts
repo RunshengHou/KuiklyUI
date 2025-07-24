@@ -44,6 +44,8 @@ kotlin {
                 implementation(project(":core"))
                 implementation(project(":core-annotations"))
                 implementation(project(":compose"))
+                // Chat Demo 相关依赖
+                implementation("com.tencent.news:markdown:1.0.3-2.2.0-ohos")
             }
         }
 
