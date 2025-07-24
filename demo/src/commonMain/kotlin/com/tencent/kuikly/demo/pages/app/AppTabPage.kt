@@ -17,27 +17,27 @@ package com.tencent.kuikly.demo.pages.app
 
 import com.tencent.kuikly.demo.pages.base.BasePager
 import com.tencent.kuikly.core.annotations.Page
-import com.tencent.kuikly.core.base.Color
 import com.tencent.kuikly.core.base.ViewBuilder
 import com.tencent.kuikly.core.base.ViewRef
-import com.tencent.kuikly.core.base.attr.ImageUri
 import com.tencent.kuikly.core.module.CallbackRef
 import com.tencent.kuikly.core.module.NotifyModule
-import com.tencent.kuikly.core.module.SharedPreferencesModule
 import com.tencent.kuikly.core.reactive.handler.observable
+import com.tencent.kuikly.core.reactive.handler.observableList
 import com.tencent.kuikly.core.views.Image
 import com.tencent.kuikly.core.views.PageList
 import com.tencent.kuikly.core.views.PageListView
 import com.tencent.kuikly.core.views.Text
 import com.tencent.kuikly.core.views.View
 import com.tencent.kuikly.demo.pages.app.home.AppHomePage
+import com.tencent.kuikly.demo.pages.app.lang.LangManager
 import com.tencent.kuikly.demo.pages.app.theme.ThemeManager
 
 @Page("AppTabPage")
 internal class AppTabPage : BasePager() {
 
     private var selectedTabIndex: Int by observable(0)
-    private val pageTitles = listOf<String>("首页", "视频", "发现", "消息", "我")
+    private var resString by observable(LangManager.getCurrentResString())
+    private var pageTitles by observableList<String>()
     private val pageIcons = listOf<String>(
         "tabbar_home.png",
         "tabbar_video.png",
@@ -54,32 +54,45 @@ internal class AppTabPage : BasePager() {
     )
     private var pageListRef : ViewRef<PageListView<*, *>>? = null
     private var theme by observable(ThemeManager.getTheme())
-    private lateinit var eventCallbackRef: CallbackRef
+    private lateinit var themeEventCallbackRef: CallbackRef
+    private lateinit var langEventCallbackRef: CallbackRef
+
+    private fun updateData() {
+        resString = LangManager.getCurrentResString()
+        pageTitles[0] = resString.btmBarHome
+        pageTitles[1] = resString.btmBarVideo
+        pageTitles[2] = resString.btmBarDiscover
+        pageTitles[3] = resString.btmBarMessage
+        pageTitles[4] = resString.btmBarMe
+    }
 
     override fun created() {
         super.created()
-        eventCallbackRef = acquireModule<NotifyModule>(NotifyModule.MODULE_NAME)
+        pageTitles.addAll(listOf(
+            resString.btmBarHome,
+            resString.btmBarVideo,
+            resString.btmBarDiscover,
+            resString.btmBarMessage,
+            resString.btmBarMe
+        ))
+        themeEventCallbackRef = acquireModule<NotifyModule>(NotifyModule.MODULE_NAME)
             .addNotify(ThemeManager.SKIN_CHANGED_EVENT) { _ ->
                 theme = ThemeManager.getTheme()
             }
-        val colorTheme = getPager().acquireModule<SharedPreferencesModule>(SharedPreferencesModule.MODULE_NAME)
-            .getString("colorTheme").takeUnless { it.isEmpty() } ?: "light"
-        val assetTheme = getPager().acquireModule<SharedPreferencesModule>(SharedPreferencesModule.MODULE_NAME)
-            .getString("assetTheme").takeUnless { it.isEmpty() } ?: "default"
-        val typoTheme = getPager().acquireModule<SharedPreferencesModule>(SharedPreferencesModule.MODULE_NAME)
-            .getString("typoTheme").takeUnless { it.isEmpty() } ?: "default"
-
-        ThemeManager.changeColorScheme(colorTheme)
-        ThemeManager.changeAssetScheme(assetTheme)
-        ThemeManager.changeTypoScheme(typoTheme)
-
+        langEventCallbackRef = acquireModule<NotifyModule>(NotifyModule.MODULE_NAME)
+            .addNotify(LangManager.LANG_CHANGED_EVENT) { _ ->
+                updateData()
+            }
+        LangManager.init()
+        resString = LangManager.getCurrentResString()
+        ThemeManager.init()
         theme = ThemeManager.getTheme()
     }
 
     override fun pageWillDestroy() {
         super.pageWillDestroy()
         acquireModule<NotifyModule>(NotifyModule.MODULE_NAME)
-            .removeNotify(ThemeManager.SKIN_CHANGED_EVENT, eventCallbackRef)
+            .removeNotify(ThemeManager.SKIN_CHANGED_EVENT, themeEventCallbackRef)
     }
 
     private fun tabBar(): ViewBuilder {
@@ -155,7 +168,11 @@ internal class AppTabPage : BasePager() {
                 }
                 AppHomePage { }
                 for (i in 1 until ctx.pageTitles.size) {
-                    AppEmptyPage(ctx.pageTitles[i]) { }
+                    AppEmptyPage {
+                        attr {
+                            title = ctx.pageTitles[i]
+                        }
+                    }
                 }
             }
             ctx.tabBar().invoke(this)

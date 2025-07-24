@@ -41,6 +41,7 @@ import com.tencent.kuikly.android.demo.adapter.VideoViewAdapter
 import com.tencent.kuikly.core.render.android.adapter.KuiklyRenderAdapterManager
 import com.tencent.kuikly.core.render.android.css.ktx.toMap
 import com.tencent.kuikly.core.render.android.expand.KuiklyRenderViewBaseDelegator
+import com.tencent.kuikly.core.render.android.expand.module.KRSharedPreferencesModule
 import org.json.JSONObject
 
 /**
@@ -102,9 +103,23 @@ class KuiklyRenderActivity : AppCompatActivity() {
         kuiklyRenderViewDelegator.onDetach()
     }
 
+    private fun getLangJson(language: String): String {
+        return if (language.startsWith("zh")) ""
+        else assets?.open("common/lang/$language.json").use { inputStream ->
+            inputStream?.bufferedReader()?.use { it.readText() } ?: ""
+        }
+    }
+
     private fun createPageData(): Map<String, Any> {
         val param = argsToMap()
+        val language = getSharedPreferences(KRSharedPreferencesModule.MODULE_NAME, Context.MODE_PRIVATE)
+            .getString("lang", null) ?: resources.configuration.locale.language
+        val langJson: String = getLangJson(language)
+
         param["appId"] = 1
+        param["lang"] = language
+        param["langJson"] = langJson
+
         return param
     }
 

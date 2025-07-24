@@ -15,6 +15,8 @@
 
 #import "RootViewController.h"
 #import "KuiklyRenderViewController.h"
+#import "KuiklyContextParam.h"
+#import "KuiklyRenderView.h"
 
 @interface RootViewController ()
 
@@ -43,7 +45,25 @@
 //    id rootVC = [[[UIApplication sharedApplication] keyWindow] rootViewController];
 //    [rootVC presentViewController:flutterViewController animated:YES completion:nil];
 
-    KuiklyRenderViewController *kuiklyVc = [[KuiklyRenderViewController alloc] initWithPageName:@"WBTabPage" pageData:@{}];
+    NSMutableDictionary *pageData = [NSMutableDictionary dictionary];
+    NSError *error = nil;
+
+    // get current language
+    NSString *sysLang = [[NSLocale preferredLanguages] firstObject];
+    NSString *userLang = [[NSUserDefaults standardUserDefaults] objectForKey:@"lang"];
+    NSString *language = userLang.length > 0 ? userLang : sysLang;
+    pageData[@"lang"] = language;
+
+    // load language json from asset
+    NSString *path = [NSString stringWithFormat:@"common/lang/%@.json", language];
+    KuiklyContextParam *contextParam = ((KuiklyRenderView *)self.hr_rootView).contextParam;
+    NSURL *pathUrl = [contextParam.contextMode urlForFileName:[path stringByDeletingPathExtension] extension:[path pathExtension]];
+    NSString *jsonStr = @"";
+    if (![language hasPrefix:@"zh"])
+        jsonStr = [NSString stringWithContentsOfURL:pathUrl encoding:NSUTF8StringEncoding error:&error] ?: @"";
+    pageData[@"langJson"] = jsonStr;
+
+    KuiklyRenderViewController *kuiklyVc = [[KuiklyRenderViewController alloc] initWithPageName:@"AppTabPage" pageData:pageData];
     kuiklyVc.modalPresentationStyle = UIModalPresentationFullScreen;
     [self presentViewController:kuiklyVc animated:YES completion:nil];
     

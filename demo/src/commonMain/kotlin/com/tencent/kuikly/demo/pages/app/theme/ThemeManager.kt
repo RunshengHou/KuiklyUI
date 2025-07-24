@@ -1,6 +1,8 @@
 package com.tencent.kuikly.demo.pages.app.theme
 
 import com.tencent.kuikly.core.base.attr.ImageUri
+import com.tencent.kuikly.core.manager.PagerManager
+import com.tencent.kuikly.core.module.SharedPreferencesModule
 import com.tencent.kuikly.core.nvi.serialization.json.JSONObject
 
 data class Theme(
@@ -10,6 +12,22 @@ data class Theme(
 )
 
 object ThemeManager {
+
+    fun init() {
+        sharedPreferencesModule = PagerManager.getCurrentPager()
+            .getModule<SharedPreferencesModule>(SharedPreferencesModule.MODULE_NAME)!!
+
+        val colorTheme = sharedPreferencesModule.getString(PREF_KEY_COLOR)
+            .takeUnless { it.isEmpty() } ?: "light"
+        val assetTheme = sharedPreferencesModule.getString(PREF_KEY_ASSET)
+            .takeUnless { it.isEmpty() } ?: "default"
+        val typoTheme = sharedPreferencesModule.getString(PREF_KEY_TYPO)
+            .takeUnless { it.isEmpty() } ?: "default"
+
+        changeColorScheme(colorTheme)
+        changeAssetScheme(assetTheme)
+        changeTypoScheme(typoTheme)
+    }
 
     // 主题配置
     private val theme: Theme = Theme(
@@ -30,6 +48,11 @@ object ThemeManager {
     val ASSET_SCHEME_LIST = listOf("default", "game")
     const val SKIN_CHANGED_EVENT = "skinChanged"
 
+    private const val PREF_KEY_COLOR = "colorTheme"
+    private const val PREF_KEY_ASSET = "assetTheme"
+    private const val PREF_KEY_TYPO = "typoTheme"
+
+    private lateinit var sharedPreferencesModule: SharedPreferencesModule
     enum class ThemeType { COLOR, ASSET, TYPOGRAPHY }
 
     // 公共API
@@ -39,14 +62,17 @@ object ThemeManager {
 
     fun changeColorScheme(theme: String) {
         changeTheme(ThemeType.COLOR, theme)
+        sharedPreferencesModule.setString(PREF_KEY_COLOR, theme)
     }
 
     fun changeAssetScheme(theme: String) {
         changeTheme(ThemeType.ASSET, theme)
+        sharedPreferencesModule.setString(PREF_KEY_ASSET, theme)
     }
 
     fun changeTypoScheme(theme: String) {
         changeTheme(ThemeType.TYPOGRAPHY, theme)
+        sharedPreferencesModule.setString(PREF_KEY_TYPO, theme)
     }
 
     fun loadColorFromJson(json: JSONObject) {
