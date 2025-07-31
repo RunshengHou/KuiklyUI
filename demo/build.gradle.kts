@@ -42,6 +42,8 @@ kotlin {
             implementation(project(":core"))
             implementation(project(":compose"))
             compileOnly(project(":core-annotations"))
+            // Chat Demo 相关依赖
+            implementation("com.tencent.kuiklybase:markdown:0.1.0")
         }
     }
 
